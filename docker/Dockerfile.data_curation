@@ -1,0 +1,16 @@
+FROM python:3.9-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Install Poetry
+COPY pyproject.toml poetry.lock ./
+RUN pip install poetry && poetry install --no-dev
+
+# Copy application files
+COPY ./apps/data_curation ./apps/data_curation
+COPY ./shared ./shared
+
+# Expose port and run the app
+EXPOSE 8001
+CMD ["poetry", "run", "uvicorn", "apps.data_curation.main:app", "--host", "0.0.0.0", "--port", "8001"]
