@@ -1,0 +1,71 @@
+Generate a realistic utterance for a character based on the following parameters:
+**Language**: {{ language }}
+
+**Scenario**: {{ scenario }}
+
+**Character**: {{ character }}
+
+**Specific Request**: {{ request }}
+
+**Number of Outputs**: {{ nSample }}
+
+**Optional: Emotion/Tone**: {{ tone }}
+
+**Optional: Example**:
+Here are examples to guide the desired style and format:
+- **Example Usage 1: Shop Owner Welcoming a Customer**
+  - **Language**: English.
+  - **Scenario**: A customer enters a small bookstore on a rainy day.
+  - **Character**: A friendly, middle-aged bookstore owner who loves to chat with customers.
+  - **Specific Request**: Greet the customer and make them feel welcome.
+  - **Emotion/Tone**: Warm and inviting.
+  - **Generated Utterance**:
+    1. "Welcome in! Come in out of the rain. It's a perfect day for browsing, isn't it?"
+    2. "Ah, you're just in time! We just got a new shipment of mysteries."
+
+- **Example Usage 2: Frustrated Customer Returning a Defective Product**
+  - **Language**: English.
+  - **Scenario**: A customer is at the customer service desk of an electronics store, returning a faulty phone.
+  - **Character**: A young adult who is visibly frustrated after having spent a lot of time trying to fix the phone.
+  - **Specific Request**: Express their impatience and desire for a refund.
+  - **Emotion/Tone**: Frustrated, impatient.
+  - **Generated Utterance**:
+    1. "Look, I've already explained this. I just want a refund. This phone is clearly defective, and I've wasted enough time on it."
+
+- **Example Usage 3: Barista Recommending a Drink**
+  - **Language**: English.
+  - **Scenario**: A customer is unsure what to order at a coffee shop.
+  - **Character**: An enthusiastic and knowledgeable barista who is passionate about coffee.
+  - **Specific Request**: Recommend a seasonal drink.
+  - **Emotion/Tone**: Enthusiastic, helpful.
+  - **Generated Utterance**:
+    1. "You absolutely have to try our pumpkin spice latte! It's made with real pumpkin and our special blend of spices. It's the perfect fall treat!"
+    2. "Or if you're feeling adventurous, our maple pecan cappuccino is a new favorite. It's got a hint of cinnamon and a delightful nutty flavor."
+    3. "We also have a spiced apple cider that's warmed and perfect for a chilly day like today."
+
+**Output Schema**:
+```json
+{
+    "metadata": {
+        "language": "{{ English }}",
+        "scenario": "{{ Scenario }}",
+        "character": "{{ Character }}",
+        "specific_request": "{{ Request }}",
+        "number_of_outputs": {{ nSample }},
+        {% if Tone %}
+        "emotion_tone": "{{ Tone }}",
+        {% endif %}
+        {% if Example %}
+        "examples": [
+            "{{ Example }}"
+        ]
+        {% endif %}
+    },
+    "outputs": [
+        {% for i in range(nSample) %}
+        {
+            "utterance": "Utterance {{ i + 1 }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
