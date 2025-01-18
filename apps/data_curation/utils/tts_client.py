@@ -1,10 +1,9 @@
 import torch
 from TTS.api import TTS
-from concurrent.futures import ThreadPoolExecutor
 import os
 import sqlite3
 
-from language_mapping import is_supported_language
+from apps.data_curation.utils.language_mapping import is_supported_language
 
 
 class TTSClient:
@@ -51,7 +50,7 @@ class TTSClient:
         print(f"Generated audio for: {utterance} -> {output_path}")
         return output_path
 
-    def generate_audio_for_hashes(self, hash_ids, speaker_wav="data/assets/test_audio.wav"):
+    def generate_audio(self, hash_ids, speaker_wav="data/assets/test_audio.wav"):
         audio_files = []
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
@@ -77,6 +76,6 @@ if __name__ == "__main__":
     hash_ids = ["228e1a089f4b063f","76c6d59d82159fa7"]
 
     # Generate audio for the given hash IDs
-    audio_files = tts_client.generate_audio_for_hashes(hash_ids, speaker_wav="data/assets/test_audio.wav")
+    audio_files = tts_client.generate_audio(hash_ids, speaker_wav="data/assets/test_audio.wav")
 
     print(f"Generated audio files: {audio_files}")

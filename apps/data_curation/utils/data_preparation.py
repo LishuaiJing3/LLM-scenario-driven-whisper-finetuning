@@ -2,7 +2,7 @@ import sqlite3
 import json
 import os
 
-def prepare_whisper_data(db_path, output_dir="data/training_data_whisper"):
+def prepare_whisper_data(db_path, output_dir="data/training_data/"):
     """
     Prepare Whisper-compatible data from the database.
     :param db_path: Path to the SQLite database.
@@ -30,13 +30,13 @@ def prepare_whisper_data(db_path, output_dir="data/training_data_whisper"):
         })
 
     # Save the prepared data as a JSON file
-    os.makedirs(output_dir, exist_ok=True)
-    data_path = os.path.join(output_dir, "prepared_data.json")
-    with open(data_path, "w") as f:
+    os.makedirs(f"{output_dir}/", exist_ok=True)
+    training_data_path = os.path.join(output_dir, "training_data.json")
+    with open(training_data_path, "w") as f:
         json.dump(prepared_data, f, indent=4)
 
-    print(f"Prepared data saved to: {data_path}")
-    return data_path
+    print(f"Prepared data saved to: {output_dir}")
+    return True
 
 
 if __name__ == "__main__":
