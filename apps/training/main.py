@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from apps.training.api.endpoints import router
 from apps.training.utils.logger import setup_logging
-from fastapi import APIRouter, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel
 from apps.training.utils.training_utils import start_training
 

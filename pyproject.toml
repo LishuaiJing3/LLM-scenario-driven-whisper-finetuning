@@ -1,7 +1,7 @@
 [project]
-name = "curate-data"
+name = "awesome-whisper-finetuning"
 version = "0.1.0"
-description = "Curate training data for Whisper finetuning"
+description = "Curate training data and serve Whisper finetuning"
 authors = [
     { name = "Lishuai Jing", email = "lishuai.jing@gmail.com" }
 ]
@@ -24,8 +24,8 @@ dependencies = [
 
 [tool.poetry]
 packages = [
-    { include = "api" },
-    { include = "utils" }
+    { include = "apps", from = "." },
+    { include = "shared", from = "." }
 ]
 
 [build-system]

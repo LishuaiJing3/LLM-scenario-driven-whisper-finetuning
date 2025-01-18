@@ -2,7 +2,7 @@ import sqlite3
 import json
 import os
 
-def prepare_whisper_data(db_path, output_dir="../../data/training_data_whisper"):
+def prepare_whisper_data(db_path, output_dir="data/training_data_whisper"):
     """
     Prepare Whisper-compatible data from the database.
     :param db_path: Path to the SQLite database.
@@ -40,6 +40,6 @@ def prepare_whisper_data(db_path, output_dir="../../data/training_data_whisper")
 
 
 if __name__ == "__main__":
-    db_path = "../../data/assets/scenarios.db"
+    db_path = "data/assets/scenarios.db"
     prepared_data_path = prepare_whisper_data(db_path)
     print(f"Prepared dataset is available at: {prepared_data_path}")

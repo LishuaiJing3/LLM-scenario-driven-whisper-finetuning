@@ -46,3 +46,5 @@ def is_supported_language(language_code):
     :return: True if supported, False otherwise.
     """
     return language_code in LANGUAGE_MAPPING
+
+

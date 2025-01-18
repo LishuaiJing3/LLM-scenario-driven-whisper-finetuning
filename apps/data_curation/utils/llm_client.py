@@ -11,7 +11,7 @@ from language_mapping import get_language_code, is_supported_language
 
 
 class LLMClient:
-    def __init__(self, model="gemini-2.0-flash-exp", prompt_version="v1", db_path="../../data/assets/scenarios.db"):
+    def __init__(self, model="gemini-2.0-flash-exp", prompt_version="v1", db_path="data/assets/scenarios.db"):
         """
         Initializes the LLM client.
         :param model: The Gemini 2.0 model to use.
@@ -27,7 +27,7 @@ class LLMClient:
         Load system and user prompts from the specified versioned directory.
         :return: Tuple of (system_prompt, user_prompt).
         """
-        prompts_path = f"prompts/{self.prompt_version}/"
+        prompts_path = f"apps/data_curation/prompts/{self.prompt_version}/"
         print(f"Loading prompts from: {os.path.abspath(prompts_path)}")
         with open(f"{prompts_path}system_prompt.txt", "r") as system_file:
             system_prompt = system_file.read()
@@ -84,7 +84,7 @@ class LLMClient:
         :param language: Full language name (e.g., "Danish").
         :return: List of unique hashes for the utterances.
         """
-        scenario_dir = os.path.join("../../data/assets", user_inputs["language"])
+        scenario_dir = os.path.join("data/assets", user_inputs["language"])
         os.makedirs(scenario_dir, exist_ok=True)
 
         utterance_hashes = []
