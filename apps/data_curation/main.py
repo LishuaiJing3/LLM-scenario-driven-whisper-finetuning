@@ -32,7 +32,10 @@ async def health_check():
 async def generate_data(request: GenerationRequest):
     try:
         # Step 1: Generate the next version for the dataset
+        
         version = "v1"
+        
+        # add init db to create if it does not exist
         db_path = "data/assets/scenarios.db"
 
         # Step 2: Generate conversation scripts

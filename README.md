@@ -104,7 +104,7 @@ Test gemini text to speech capability
 Control number of records so that we do not run into context window issues. 
 pycountry for get country info
 
-Deploy on Kubernettis
+Deploy on Kubernettis for hosting
 use aisuit to abstract LLM interfaces
 
 Enrich tests

@@ -1,6 +1,5 @@
-from fastapi import FastAPI
-from apps.training.utils.logger import setup_logging
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
+from shared.utils.logger import setup_logging
 from pydantic import BaseModel
 from apps.training.utils.training_utils import start_training
 

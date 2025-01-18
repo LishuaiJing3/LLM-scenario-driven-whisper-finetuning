@@ -4,6 +4,34 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration, Seq2
 from datasets import Audio
 import torch
 
+
+# Custom Data Collator for Whisper
+class DataCollatorWithPadding:
+    def __init__(self, processor):
+        self.processor = processor
+
+    def __call__(self, features):
+        # Extract input_features and labels
+        input_features = [torch.tensor(feature["input_features"]) for feature in features]
+        labels = [torch.tensor(feature["labels"]) for feature in features]
+
+        # Pad input_features and labels
+        input_features = torch.nn.utils.rnn.pad_sequence(
+            input_features,
+            batch_first=True,
+        )
+
+        labels = torch.nn.utils.rnn.pad_sequence(
+            labels,
+            batch_first=True,
+            padding_value=self.processor.tokenizer.pad_token_id,
+        )
+
+        # Replace padding token ID with -100 to ignore during loss computation
+        labels[labels == self.processor.tokenizer.pad_token_id] = -100
+
+        return {"input_features": input_features, "labels": labels}
+
 def start_training(dataset_path, model_name, output_dir, language_filter):
     # Load the prepared dataset
     with open(dataset_path, "r") as f:
@@ -79,3 +107,21 @@ def start_training(dataset_path, model_name, output_dir, language_filter):
     model.save_pretrained(output_dir)
     processor.save_pretrained(output_dir)
     print(f"Fine-tuning complete. Model and processor saved to: {output_dir}")
+    
+if __name__ == "__main__":
+    start_training(
+        dataset_path="data/training_data/training_data.json",
+        model_name="openai/whisper-small",
+        output_dir="data/whisper_finetuned",
+        language_filter="en"
+    )
+    print("Training complete")
+
+"""
+{
+  "dataset_path": "data/training_data/training_data.json",
+  "model_name": "openai/whisper-small",
+  "output_dir": "data/whisper_finetuned",
+  "language_filter": "en"
+}
+"""
