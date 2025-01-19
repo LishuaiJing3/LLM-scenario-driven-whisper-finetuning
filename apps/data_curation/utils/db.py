@@ -17,6 +17,7 @@ def create_sqlite_database(db_filename="data/assets/scenarios.db"):
     Args:
         db_filename (str): The name or path of the database file. Defaults to "data/assets/scenarios.db".
     """
+    conn = None
     try:
         # Ensure the directory exists for the database file
         os.makedirs(os.path.dirname(db_filename), exist_ok=True)
@@ -75,7 +76,7 @@ def hash_scenario_text(scenario_text):
 
 if __name__ == "__main__":
     # Define the default database file path
-    db_file = "data/assets/scenarios1.db"
+    db_file = "data/assets/scenarios.db"
 
     # Create the database with the required schema
     create_sqlite_database(db_file)

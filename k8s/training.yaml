@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: whisper-training
+  namespace: whisper
+spec:
+  template:
+    spec:
+      containers:
+      - name: training
+        image: ghcr.io/YOUR_GITHUB_ORG/training:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        env:
+        - name: DATASET_PATH
+          value: /data/datasets/training_data.json
+        - name: MODEL_NAME
+          value: openai/whisper-small
+        - name: OUTPUT_DIR
+          value: /data/whisper_finetuned
+        volumeMounts:
+        - name: shared-data-datasets
+          mountPath: /app/data/datasets
+        - name: shared-data-whisper
+          mountPath: /app/data/whisper_finetuned
+      volumes:
+      - name: shared-data-datasets
+        persistentVolumeClaim:
+          claimName: data-pvc
+      - name: shared-data-whisper
+        persistentVolumeClaim:
+          claimName: data-pvc
+      restartPolicy: Never
+  backoffLimit: 4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: training
+  namespace: whisper
+spec:
+  selector:
+    app: training
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP 

@@ -5,7 +5,6 @@ description = "Curate training data and serve Whisper finetuning"
 authors = [
     { name = "Lishuai Jing", email = "lishuai.jing@gmail.com" }
 ]
-readme = "README.md"
 requires-python = ">=3.11,<3.13"
 
 dependencies = [

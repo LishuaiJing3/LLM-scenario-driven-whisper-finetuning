@@ -1,4 +1,4 @@
-.PHONY: data_curation training serving docker-build docker-run docker-stop docker-clean clean
+.PHONY: data_curation training serving docker-build docker-run docker-stop docker-clean compose-build compose-run compose-stop compose-clean k3d-setup k3d-deploy k3d-clean clean
 
 # Local Environment
 # Run Data Curation API
@@ -13,33 +13,42 @@ training:
 serving:
 	poetry run uvicorn apps.serving.main:app --host 0.0.0.0 --port 8003 --reload
 
-# Docker Environment
-# Build Docker images for all services
+# Docker Environment with Docker Compose
 docker-build:
-	docker build -f docker/Dockerfile.data_curation -t data-curation-api .
-	docker build -f docker/Dockerfile.training -t training-api .
-	docker build -f docker/Dockerfile.serving -t serving-api .
+	docker-compose build
 
-# Run Docker containers for all services
 docker-run:
-	docker run -d -p 8001:8000 --name data-curation-api data-curation-api
-	docker run -d -p 8002:8000 --name training-api training-api
-	docker run -d -p 8003:8000 --name serving-api serving-api
+	docker-compose up -d
 
-# Stop Docker containers
 docker-stop:
-	docker stop data-curation-api || true
-	docker stop training-api || true
-	docker stop serving-api || true
+	docker-compose stop
 
-# Remove Docker containers and images
 docker-clean:
-	docker rm -f data-curation-api || true
-	docker rm -f training-api || true
-	docker rm -f serving-api || true
-	docker rmi -f data-curation-api training-api serving-api || true
+	docker-compose down -v
 
-# Remove all Docker containers and images
-clean:
-	docker rm -f $$(docker ps -aq) || true
-	docker rmi -f $$(docker images -q) || true
+# Kubernetes (k3d) Environment
+k3d-setup:
+	./scripts/setup_k3d.sh
+
+k3d-deploy:
+	kubectl apply -f k8s/storage.yaml
+	kubectl apply -f k8s/data-curation.yaml
+	kubectl apply -f k8s/training.yaml
+	kubectl apply -f k8s/serving.yaml
+
+k3d-clean:
+	kubectl delete -f k8s/serving.yaml
+	kubectl delete -f k8s/training.yaml
+	kubectl delete -f k8s/data-curation.yaml
+	kubectl delete -f k8s/storage.yaml
+	k3d cluster delete whisper-finetuning-cluster
+
+# Shortcut Targets
+compose-build: docker-build
+compose-run: docker-run
+compose-stop: docker-stop
+compose-clean: docker-clean
+
+# General Cleanup
+clean: compose-clean k3d-clean
+	docker system prune -a -f --volumes

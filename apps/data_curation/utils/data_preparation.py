@@ -36,7 +36,7 @@ def prepare_whisper_data(db_path, output_dir="data/training_data/"):
         json.dump(prepared_data, f, indent=4)
 
     print(f"Prepared data saved to: {output_dir}")
-    return True
+    return training_data_path
 
 
 if __name__ == "__main__":

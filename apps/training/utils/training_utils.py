@@ -68,7 +68,18 @@ class WhisperDataCollator:
 # -----------------------------
 # 3. Preprocessing function
 # -----------------------------
-def preprocess_batch(batch):
+def preprocess_batch(batch, processor, sampling_rate=16000):
+    """
+    Preprocess a batch of audio data for Whisper training.
+    
+    Args:
+        batch: Dictionary containing audio_filepath, text, and language_code
+        processor: WhisperProcessor instance for feature extraction and tokenization
+        sampling_rate: Audio sampling rate in Hz (default: 16000)
+    
+    Returns:
+        Dictionary containing preprocessed input_features and labels
+    """
     input_features_list = []
     labels_list = []
 
@@ -82,7 +93,10 @@ def preprocess_batch(batch):
 
         # Prepend language token
         language_token = f"<|{language_code}|>"
-        labels = processor.tokenizer(f"{language_token} {text}", return_tensors="pt").input_ids[0]
+        labels = processor.tokenizer(
+            f"{language_token} {text}", 
+            return_tensors="pt"
+        ).input_ids[0]
 
         input_features_list.append(input_features)
         labels_list.append(labels)
@@ -119,7 +133,6 @@ def start_training(
     dataset = Dataset.from_list(data)
 
     # Cast audio column to Audio feature
-    global sampling_rate
     sampling_rate = 16000
     dataset = dataset.cast_column("audio_filepath", Audio(sampling_rate=sampling_rate))
 
@@ -135,7 +148,6 @@ def start_training(
             print("Warning: 8-bit quantization only works on NVIDIA GPUs, skipping...")
 
     # Load processor
-    global processor
     processor = WhisperProcessor.from_pretrained(model_name)
 
     # Load model
@@ -152,12 +164,18 @@ def start_training(
         # Move model to device manually if not using device_map='auto'
         model.to(DEVICE)
 
-    # Preprocess dataset
+    # Preprocess dataset with processor and sampling_rate
     dataset = dataset.map(
-        preprocess_batch,
+        lambda x: preprocess_batch(x, processor, sampling_rate),
         batched=True,
-        remove_columns=dataset.column_names
+        remove_columns=None  # Don't remove columns here
     )
+
+    # Now create the final dataset with just the required columns
+    dataset = Dataset.from_dict({
+        'input_features': dataset['input_features'],
+        'labels': dataset['labels']
+    })
 
     # Data collator
     data_collator = WhisperDataCollator(processor)

@@ -39,8 +39,6 @@ async def generate_data(request: GenerationRequest):
         
         version = "v1"
         
-        # add init db to create if it does not exist
-
         # Step 2: Generate conversation scripts
         llm = LLMClient(model=config.LLM_MODEL, prompt_version=version, db_path=config.DB_PATH)
         prompts_path = config.PROMPTS_DIR / version

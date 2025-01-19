@@ -1,0 +1,20 @@
+# Repository configuration
+github:
+  owner: ${GITHUB_OWNER:-"local"}  # Default to "local" if not set
+  repository: ${GITHUB_REPO:-"whisper-finetuning"}  # Default repository name
+
+container_registry:
+  host: ${CONTAINER_REGISTRY:-"ghcr.io"}  # Can be changed to other registries
+  namespace: ${REGISTRY_NAMESPACE:-"local"}  # Default to "local" for local development
+  tag: ${IMAGE_TAG:-"latest"}  # Image tag, defaults to "latest"
+
+services:
+  - name: data-curation
+    port: 8001
+    target_port: 8000
+  - name: training
+    port: 8002
+    target_port: 8000
+  - name: serving
+    port: 8003
+    target_port: 8000 

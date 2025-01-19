@@ -32,13 +32,13 @@ class LLMClient:
         """
         #prompts_path = f"apps/data_curation/prompts/{self.prompt_version}/"
         print(f"Loading prompts from: {os.path.abspath(prompts_path)}")
-        with open(f"{prompts_path}system_prompt.txt", "r") as system_file:
+        with open(f"{prompts_path}/system_prompt.txt", "r") as system_file:
             system_prompt = system_file.read()
-        with open(f"{prompts_path}user_prompt.txt", "r") as user_file:
+        with open(f"{prompts_path}/user_prompt.txt", "r") as user_file:
             user_prompt = user_file.read()
         return system_prompt, user_prompt
 
-    def generate_conversations(self, user_inputs, prompt_path,output_dir="data/assets"):
+    def generate_conversations(self, user_inputs, prompt_path, output_dir="data/assets"):
         """
         Generate conversations based on the provided user inputs and save to SQLite and file system.
         :param user_inputs: Dictionary containing the user-provided parameters.
@@ -150,5 +150,14 @@ if __name__ == "__main__":
 "request": "Greet the customer and make them feel welcome.",
 "nSample": 2,
 "tone": "Warm and inviting"
+}
+
+{
+"language": "English",
+"scenario": "A customer enters a small bookstore on a sunny day.",
+"character": "A friendly, middle-aged bookstore owner who does not like to chat with customers.",
+"request": "Greet the customer and make them feel uncomfortable.",
+"nSample": 2,
+"tone": "neutral"
 }
 '''

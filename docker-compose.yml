@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  data_curation:
+    image: data-curation-api
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.data_curation
+    ports:
+      - "8001:8001"
+    volumes:
+      - shared-data:/app/data/assets
+    environment:
+      - COQUI_TTS_AGREED=1
+      - LLM_MODEL=gemini-pro
+      - PROMPTS_DIR=/app/data/prompts
+      - DATASETS_DIR=/app/data/datasets
+      - ASSETS_DIR=/app/data/assets
+      - TRAINING_DATA_DIR=/app/data/training_data
+      - DB_PATH=/app/data/db.sqlite
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  training:
+    image: training-api
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.training
+    ports:
+      - "8002:8002"
+    volumes:
+      - shared-data:/app/data/datasets
+      - shared-data:/app/data/whisper_finetuned
+    environment:
+      - TRAINING_DATA_PATH=/app/data/training_data/training_data.json
+      - MODEL_NAME=openai/whisper-small
+      - OUTPUT_DIR=/app/data/whisper_finetuned
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  serving:
+    image: serving-api
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.serving
+    ports:
+      - "8003:8003"
+    volumes:
+      - shared-data:/app/data/whisper_finetuned
+    environment:
+      - MODEL_DIR=/app/data/whisper_finetuned
+      - SERVING_SERVICE_TITLE=Whisper Inference API
+      - API_VERSION=v1
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  shared-data:

@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CONTAINER_REGISTRY: ghcr.io
+  REGISTRY_NAMESPACE: ${{ github.repository_owner }}
+  IMAGE_TAG: ${{ github.sha }}
+  GITHUB_OWNER: ${{ github.repository_owner }}
+  GITHUB_REPO: ${{ github.event.repository.name }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+      
+      - name: Run tests
+        run: poetry run pytest
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+      
+      - name: Generate Kubernetes manifests
+        run: python scripts/generate_manifests.py
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push Data Curation API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.data_curation
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/data-curation:${{ env.IMAGE_TAG }}
+      
+      - name: Build and push Training API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.training
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/training:${{ env.IMAGE_TAG }}
+      
+      - name: Build and push Serving API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.serving
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/serving:${{ env.IMAGE_TAG }}
+      
+      - name: Deploy to Kubernetes
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+          kubectl apply -f k8s/ 
