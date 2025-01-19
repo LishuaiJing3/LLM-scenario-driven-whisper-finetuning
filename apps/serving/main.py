@@ -13,9 +13,6 @@ class InferenceRequest(BaseModel):
 # Setup logging
 setup_logging()
 
-# Include the API router
-app.include_router(router, prefix="/api/serving", tags=["Serving"])
-
 # Root endpoint for health check
 @app.get("/")
 async def health_check():
