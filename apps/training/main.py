@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from shared.utils.logger import setup_logging
+from shared.config.app_config import config
 from pydantic import BaseModel
 from apps.training.utils.training_utils import start_training
 
 # Initialize the app
-app = FastAPI(title="Training Service", version="1.0")
+app = FastAPI(title=config.TRAINING_SERVICE_TITLE, version=config.API_VERSION)
 
 # Setup logging
 setup_logging()

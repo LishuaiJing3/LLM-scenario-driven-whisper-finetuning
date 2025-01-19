@@ -2,9 +2,10 @@ from fastapi import FastAPI, HTTPException
 from shared.utils.logger import setup_logging
 from pydantic import BaseModel
 from apps.serving.utils.inference_utils import transcribe_audio
+from shared.config.app_config import config
 
 # Initialize the app
-app = FastAPI(title="Serving Service", version="1.0")
+app = FastAPI(title=config.SERVING_SERVICE_TITLE, version=config.API_VERSION)
 
 class InferenceRequest(BaseModel):
     audio_path: str

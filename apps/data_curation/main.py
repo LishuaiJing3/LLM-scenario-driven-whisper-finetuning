@@ -1,21 +1,25 @@
 from fastapi import FastAPI, HTTPException
 from shared.utils.logger import setup_logging
+from shared.config.app_config import config
 from pydantic import BaseModel
 from apps.data_curation.utils.llm_client import LLMClient
 from apps.data_curation.utils.tts_client import TTSClient
 from apps.data_curation.utils.data_preparation import prepare_whisper_data
+from apps.data_curation.utils.db import create_sqlite_database
 import os
 
 # Initialize the app
-app = FastAPI(title="Data Curation Service", version="1.0")
+app = FastAPI(title=config.DATA_CURATION_SERVICE_TITLE, version=config.API_VERSION)
 
+# Initialize database on startup
+create_sqlite_database(config.DB_PATH)  # This will create the DB if it doesn't exist
 
 class GenerationRequest(BaseModel):
     language: str
     scenario: str
     character: str
     request: str
-    nSample: int  # in seconds
+    nSample: int  
     tone: str
 
 
@@ -36,28 +40,27 @@ async def generate_data(request: GenerationRequest):
         version = "v1"
         
         # add init db to create if it does not exist
-        db_path = "data/assets/scenarios.db"
 
         # Step 2: Generate conversation scripts
-        llm = LLMClient(model="gemini-2.0-flash-exp", prompt_version="v1", db_path="data/assets/scenarios.db")
-        prompts_path = f"apps/data_curation/prompts/{version}/"
+        llm = LLMClient(model=config.LLM_MODEL, prompt_version=version, db_path=config.DB_PATH)
+        prompts_path = config.PROMPTS_DIR / version
         utterance_ids = llm.generate_conversations(
             request.dict(),
             prompt_path=prompts_path,
-            output_dir=f"data/datasets/"
+            output_dir=config.DATASETS_DIR
         )
         
         # Step 3: Generate audio files
-        tts = TTSClient(tts_model="tts_models/multilingual/multi-dataset/xtts_v2", db_path="data/assets/scenarios.db")
+        tts = TTSClient(tts_model=config.TTS_MODEL, db_path=config.DB_PATH)
         tts.generate_audio(
             utterance_ids,
-            "data/assets/test_audio.wav"
+            config.ASSETS_DIR / "test_audio.wav"
         )
 
         # Step 4: Prepare Whisper data
-        whisper_data_path = prepare_whisper_data(db_path, output_dir="data/training_data/")
+        whisper_data_path = prepare_whisper_data(config.DB_PATH, output_dir=config.TRAINING_DATA_DIR)
 
-        return {"status": "success", "data_version": version, "whisper_data": whisper_data_path}
+        return {"status": "success", "data_version": version, "whisper_data": str(whisper_data_path)}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
