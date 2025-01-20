@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-curation
+  namespace: whisper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-curation
+  template:
+    metadata:
+      labels:
+        app: data-curation
+    spec:
+      containers:
+      - name: data-curation
+        image: data-curation-api:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: COQUI_TTS_AGREED
+          value: "1"
+        - name: LLM_MODEL
+          value: "gemini-pro"
+        - name: PROMPTS_DIR
+          value: "/app/data/prompts"
+        - name: DATASETS_DIR
+          value: "/app/data/datasets"
+        - name: ASSETS_DIR
+          value: "/app/data/assets"
+        - name: TRAINING_DATA_DIR
+          value: "/app/data/training_data"
+        - name: DB_PATH
+          value: "/app/data/db.sqlite"
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: GOOGLE_API_KEY
+        volumeMounts:
+        - name: shared-data
+          mountPath: /app/data/assets
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: shared-data-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-curation
+  namespace: whisper
+spec:
+  selector:
+    app: data-curation
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP 

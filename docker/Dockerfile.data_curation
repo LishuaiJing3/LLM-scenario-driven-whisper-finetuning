@@ -1,0 +1,41 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install *latest* stable Rust via rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Add Rust binaries to PATH
+ENV PATH=/root/.cargo/bin:$PATH
+
+# (Optional) Confirm rustc version (must be >= 1.74)
+RUN rustc --version
+
+# Install Poetry
+ENV POETRY_HOME=/opt/poetry
+# Set Coqui TTS license acceptance
+ENV COQUI_TTS_AGREED=1
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+    && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry \
+    && poetry config virtualenvs.create false
+
+# Copy source code first
+COPY ./apps/data_curation ./apps/data_curation
+COPY ./shared ./shared
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry install --no-interaction --no-ansi --no-root && \
+    poetry install --no-interaction --no-ansi
+
+# Create data directories
+RUN mkdir -p /app/data/assets
+
+EXPOSE 8001
+
+CMD ["poetry", "run", "uvicorn", "apps.data_curation.main:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -1,0 +1,34 @@
+[project]
+name = "awesome-whisper-finetuning"
+version = "0.1.0"
+description = "Curate training data and serve Whisper finetuning"
+authors = [
+    { name = "Lishuai Jing", email = "lishuai.jing@gmail.com" }
+]
+requires-python = ">=3.11,<3.13"
+
+dependencies = [
+    "python-dotenv>=1.0.1,<2.0.0",
+    "google-generativeai>=0.8.3,<0.9.0", 
+    "ipykernel>=6.29.5,<7.0.0", 
+    "coqui-tts (>=0.25.3,<0.26.0)", 
+    "torch (>=2.5.1,<3.0.0)", 
+    "pycountry (>=24.6.1,<25.0.0)", 
+    "datasets (>=3.2.0,<4.0.0)", 
+    "accelerate (>=1.2.1,<2.0.0)", 
+    "scipy (>=1.15.1,<2.0.0)", 
+    "soundfile (>=0.13.0,<0.14.0)", 
+    "librosa (>=0.10.2.post1,<0.11.0)", 
+    "transformers (==4.46.0)", 
+    "uvicorn (>=0.34.0,<0.35.0)", 
+    "fastapi (>=0.115.6,<0.116.0)"]
+
+[tool.poetry]
+packages = [
+    { include = "apps", from = "." },
+    { include = "shared", from = "." }
+]
+
+[build-system]
+requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: serving
+  namespace: whisper
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: serving
+  template:
+    metadata:
+      labels:
+        app: serving
+    spec:
+      containers:
+      - name: serving
+        image: ghcr.io/YOUR_GITHUB_ORG/serving:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_DIR
+          value: /data/whisper_finetuned
+        volumeMounts:
+        - name: shared-data-whisper
+          mountPath: /app/data/whisper_finetuned
+      volumes:
+      - name: shared-data-whisper
+        persistentVolumeClaim:
+          claimName: data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: serving
+  namespace: whisper
+spec:
+  selector:
+    app: serving
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: LoadBalancer 

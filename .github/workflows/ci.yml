@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # Only run job if this is a push on main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # We can set environment variables here or inline in steps
+    env:
+      CONTAINER_REGISTRY: ghcr.io
+      REGISTRY_NAMESPACE: ${{ secrets.REGISTRY_NAMESPACE }}
+      IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Generate Kubernetes Manifests
+        run: python scripts/generate_manifests.py
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.GHCR_USERNAME }}
+          password: ${{ env.GHCR_PAT }}
+
+      - name: Build and Push Data Curation API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.data_curation
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/data-curation:${{ github.sha }}
+
+      - name: Build and Push Training API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.training
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/training:${{ github.sha }}
+
+      - name: Build and Push Serving API
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.serving
+          push: true
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/serving:${{ github.sha }}
+

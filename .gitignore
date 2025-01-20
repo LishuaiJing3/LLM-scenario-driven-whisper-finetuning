@@ -5,6 +5,8 @@ __pycache__/
 
 /data/
 whisper_finetuned/
+/data/
+/data/whisper_finetuned/
 
 # C extensions
 *.so
