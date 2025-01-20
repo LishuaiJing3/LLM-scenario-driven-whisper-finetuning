@@ -7,12 +7,13 @@ from jinja2 import Template
 import sqlite3
 from apps.data_curation.utils.db import hash_scenario_text
 from apps.data_curation.utils.language_mapping import get_language_code, is_supported_language
+from pathlib import Path
 
 load_dotenv()
 
 
 class LLMClient:
-    def __init__(self, model="gemini-2.0-flash-exp", prompt_version="v1", db_path="data/assets/scenarios.db"):
+    def __init__(self, model="gemini-2.0-flash-exp", prompt_version="v1", db_path="assets/scenarios.db"):
         """
         Initializes the LLM client.
         :param model: The Gemini 2.0 model to use.
@@ -30,7 +31,6 @@ class LLMClient:
         Load system and user prompts from the specified versioned directory.
         :return: Tuple of (system_prompt, user_prompt).
         """
-        #prompts_path = f"apps/data_curation/prompts/{self.prompt_version}/"
         print(f"Loading prompts from: {os.path.abspath(prompts_path)}")
         with open(f"{prompts_path}/system_prompt.txt", "r") as system_file:
             system_prompt = system_file.read()
@@ -87,7 +87,8 @@ class LLMClient:
         :param language: Full language name (e.g., "Danish").
         :return: List of unique hashes for the utterances.
         """
-        scenario_dir = os.path.join(output_dir, user_inputs["language"])
+        # Create paths
+        scenario_dir = os.path.join("data", "datasets", user_inputs["language"])
         os.makedirs(scenario_dir, exist_ok=True)
 
         utterance_hashes = []
@@ -96,31 +97,49 @@ class LLMClient:
 
             for idx, output in enumerate(llm_output["outputs"]):
                 utterance = output["utterance"]
-                scenario_hash = hash_scenario_text(f"{user_inputs['language']}_{user_inputs['scenario']}_{utterance}_{idx}")
-                audio_path = os.path.join(scenario_dir, f"{scenario_hash}_utterance.wav")
+                scenario_hash = hash_scenario_text(
+                    f"{user_inputs['language']}_{user_inputs['scenario']}_"
+                    f"{utterance}_{idx}"
+                )
+                
+                # Store relative path in database
+                relative_audio_path = os.path.join(
+                    scenario_dir, f"{scenario_hash}_utterance.wav"
+                )
+                
                 # Normalize language input to code
                 language_code = get_language_code(user_inputs['language'])
                 if not language_code or not is_supported_language(language_code):
-                    raise ValueError(f"Unsupported language: {user_inputs['language']}")
+                    raise ValueError(
+                        f"Unsupported language: {user_inputs['language']}"
+                    )
 
                 try:
                     cursor.execute("""
-                    INSERT INTO scenarios (scenario, scenario_id, language, language_code, utterance, audio_path)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """, (user_inputs["scenario"], scenario_hash, user_inputs["language"], language_code, utterance, audio_path))
+                    INSERT INTO scenarios (
+                        scenario, scenario_id, language, 
+                        language_code, utterance, audio_path
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """, (
+                        user_inputs["scenario"], scenario_hash,
+                        user_inputs["language"], language_code,
+                        utterance, relative_audio_path
+                    ))
                 except sqlite3.IntegrityError:
                     print(f"Duplicate entry skipped for utterance: {utterance}")
                     continue
 
                 # Save utterance JSON
-                script_path = os.path.join(scenario_dir, f"{scenario_hash}_utterance.json")
+                script_path = os.path.join(
+                    scenario_dir, f"{scenario_hash}_utterance.json"
+                )
                 with open(script_path, "w") as script_file:
                     json.dump(output, script_file, indent=4)
 
                 utterance_hashes.append(scenario_hash)
 
             conn.commit()
-        print(f"Data saved to SQLite and assets folder. Generated hashes: {utterance_hashes}")
+        print(f"Data saved to SQLite and assets folder. Hashes: {utterance_hashes}")
         return utterance_hashes
         
         

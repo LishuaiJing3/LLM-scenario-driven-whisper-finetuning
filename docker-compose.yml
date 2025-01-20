@@ -9,7 +9,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - shared-data:/app/data/assets
+      - shared-data:/app/data
     env_file:
       - .env
     restart: unless-stopped
@@ -22,8 +22,7 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - shared-data:/app/data/datasets
-      - shared-data:/app/data/whisper_finetuned
+      - shared-data:/app/data
     env_file:
       - .env
     restart: unless-stopped
@@ -36,7 +35,7 @@ services:
     ports:
       - "8003:8003"
     volumes:
-      - shared-data:/app/data/whisper_finetuned
+      - shared-data:/app/data
     env_file:
       - .env
     restart: unless-stopped

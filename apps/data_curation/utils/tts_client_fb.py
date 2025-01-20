@@ -4,6 +4,7 @@ import os
 import sqlite3
 import torchaudio
 from apps.data_curation.utils.language_mapping import is_supported_language
+from shared.config.app_config import config
 
 
 # MMS-TTS language code mapping
@@ -72,14 +73,14 @@ class TTSClientFB:
                 AutoTokenizer.from_pretrained(model_name)
             )
 
-    def _generate_single_audio(self, utterance, language_code, output_path):
+    def _generate_single_audio(self, utterance, language_code, relative_path):
         """
         Generate a single audio file for a given utterance and language.
 
         Args:
             utterance (str): The text to convert to speech.
             language_code (str): The language code for the utterance.
-            output_path (str): Path to save the generated WAV file.
+            relative_path (str): Relative path to save the WAV file.
         """
         try:
             # Validate and load language-specific model
@@ -89,7 +90,7 @@ class TTSClientFB:
             self._load_model_for_language(language_code)
             
             # Ensure the parent directory exists
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            os.makedirs(os.path.dirname(relative_path), exist_ok=True)
 
             # Get language-specific model and tokenizer
             model = self.models[language_code]
@@ -106,13 +107,13 @@ class TTSClientFB:
 
             # Save the waveform as a WAV file
             torchaudio.save(
-                output_path,
+                relative_path,
                 waveform.cpu(),
                 sample_rate=model.config.sampling_rate,
                 encoding="PCM_S",
                 bits_per_sample=16
             )
-            print(f"Generated audio saved to: {output_path}")
+            print(f"Generated audio saved to: {relative_path}")
             return True
 
         except Exception as e:
@@ -140,11 +141,11 @@ class TTSClientFB:
                     print(f"No record found for hash ID: {hash_id}")
                     continue
                 
-                utterance, language_code, audio_path = row
+                utterance, language_code, relative_path = row
                 success = self._generate_single_audio(
-                    utterance, language_code, audio_path
+                    utterance, language_code, relative_path
                 )
                 if success:
-                    audio_files.append(audio_path)
+                    audio_files.append(relative_path)
 
         return audio_files
