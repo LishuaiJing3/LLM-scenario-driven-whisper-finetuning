@@ -36,9 +36,10 @@ RUN pip install --upgrade pip
 COPY ./pyproject.toml /app/pyproject.toml
 COPY ./poetry.lock /app/poetry.lock
 
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi --with serving && \
-    rm -rf /app/.venv/lib/python3.11/site-packages/tests
+RUN rm -rf /app/.venv/lib/python3.11/site-packages/tests || true && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi --only main,serving && \
+    rm -rf /app/.venv/lib/python3.11/site-packages/tests || true
 
 # Copy application code
 COPY ./apps/serving ./apps/serving
