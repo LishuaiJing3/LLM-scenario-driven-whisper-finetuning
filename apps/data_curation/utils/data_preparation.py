@@ -2,6 +2,7 @@ import sqlite3
 import json
 import os
 
+
 def prepare_whisper_data(db_path, output_dir="data/training_data/"):
     """
     Prepare Whisper-compatible data from the database.
@@ -24,13 +25,13 @@ def prepare_whisper_data(db_path, output_dir="data/training_data/"):
     for row in rows:
         audio_path, text, language = row
         prepared_data.append({
-            "audio_filepath": audio_path,
+            "audio_filepath": audio_path,  # Use relative path directly
             "text": text,
             "language_code": language
         })
 
     # Save the prepared data as a JSON file
-    os.makedirs(f"{output_dir}/", exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     training_data_path = os.path.join(output_dir, "training_data.json")
     with open(training_data_path, "w") as f:
         json.dump(prepared_data, f, indent=4)

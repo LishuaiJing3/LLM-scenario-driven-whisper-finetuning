@@ -1,3 +1,4 @@
+# Stage 1: Builder
 FROM python:3.11-slim as builder
 
 WORKDIR /app
@@ -13,14 +14,13 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
 
-# Install Poetry in its own virtual environment
+# Install Poetry
 ENV POETRY_VERSION=2.0.1
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_CACHE_DIR=/opt/.cache
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install poetry in a dedicated venv
 RUN python -m venv /opt/poetry && \
     /opt/poetry/bin/pip install --upgrade pip && \
     /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" && \
@@ -32,17 +32,23 @@ ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 RUN pip install --upgrade pip
 
-# Copy and install dependencies
-COPY pyproject.toml poetry.lock ./
-RUN poetry env use /app/.venv/bin/python && \
-    poetry install --no-interaction --no-ansi --no-root --only main
+# Copy and install dependencies for training
+COPY ./pyproject.toml /app/pyproject.toml
+COPY ./poetry.lock /app/poetry.lock
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi --with training && \
+    rm -rf /app/.venv/lib/python3.11/site-packages/tests
 
-# Final stage - minimal image
+# Copy application code
+COPY ./apps/training ./apps/training
+COPY ./shared ./shared
+
+# Stage 2: Final Image
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy virtual environment and set environment variables
+# Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
@@ -51,6 +57,11 @@ ENV PYTHONPATH="/app:$PYTHONPATH"
 # Copy application code
 COPY ./apps/training ./apps/training
 COPY ./shared ./shared
+
+# Install runtime dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8002
 
