@@ -43,7 +43,7 @@ jobs:
           username: ${{ env.GHCR_USERNAME }}
           password: ${{ env.GHCR_PAT }}
 
-      # Build and push multiple images
+      # Build and push Docker images with specific Dockerfiles
       - name: Build and Push Data Curation API
         uses: docker/build-push-action@v4
         with:
