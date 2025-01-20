@@ -3,29 +3,36 @@ from shared.utils.logger import setup_logging
 from shared.config.app_config import config
 from pydantic import BaseModel
 from apps.data_curation.utils.llm_client import LLMClient
-from apps.data_curation.utils.tts_client import TTSClient
+from apps.data_curation.utils.tts_client_fb import TTSClientFB
 from apps.data_curation.utils.data_preparation import prepare_whisper_data
 from apps.data_curation.utils.db import create_sqlite_database
-import os
+
+# Setup logging
+setup_logging()
 
 # Initialize the app
-app = FastAPI(title=config.DATA_CURATION_SERVICE_TITLE, version=config.API_VERSION)
+app = FastAPI(
+    title=config.DATA_CURATION_SERVICE_TITLE,
+    version=config.API_VERSION
+)
 
 # Initialize database on startup
-create_sqlite_database(config.DB_PATH)  # This will create the DB if it doesn't exist
+create_sqlite_database(config.DB_PATH)
 
+# Define request model
 class GenerationRequest(BaseModel):
     language: str
     scenario: str
     character: str
     request: str
-    nSample: int  
+    nSample: int
     tone: str
 
-
-# Setup logging
-setup_logging()
-
+# Create TTS client instance using Facebook's MMS-TTS
+tts_client_fb = TTSClientFB(
+    model_name="facebook/mms-tts",
+    db_path=config.DB_PATH
+)
 
 # Root endpoint for health check
 @app.get("/")
@@ -36,11 +43,14 @@ async def health_check():
 async def generate_data(request: GenerationRequest):
     try:
         # Step 1: Generate the next version for the dataset
-        
         version = "v1"
         
-        # Step 2: Generate conversation scripts
-        llm = LLMClient(model=config.LLM_MODEL, prompt_version=version, db_path=config.DB_PATH)
+        # Step 2: Generate conversation scripts and get utterance IDs
+        llm = LLMClient(
+            model=config.LLM_MODEL,
+            prompt_version=version,
+            db_path=config.DB_PATH
+        )
         prompts_path = config.PROMPTS_DIR / version
         utterance_ids = llm.generate_conversations(
             request.dict(),
@@ -48,18 +58,23 @@ async def generate_data(request: GenerationRequest):
             output_dir=config.DATASETS_DIR
         )
         
-        # Step 3: Generate audio files
-        tts = TTSClient(tts_model=config.TTS_MODEL, db_path=config.DB_PATH)
-        tts.generate_audio(
-            utterance_ids,
-            config.ASSETS_DIR / "test_audio.wav"
-        )
+        # Step 3: Generate audio files using database-driven approach
+        audio_files = tts_client_fb.generate_audio(utterance_ids)
+        if not audio_files:
+            raise Exception("Failed to generate any audio files")
 
         # Step 4: Prepare Whisper data
-        whisper_data_path = prepare_whisper_data(config.DB_PATH, output_dir=config.TRAINING_DATA_DIR)
+        whisper_data_path = prepare_whisper_data(
+            config.DB_PATH,
+            output_dir=config.TRAINING_DATA_DIR
+        )
 
-        return {"status": "success", "data_version": version, "whisper_data": str(whisper_data_path)}
+        return {
+            "status": "success",
+            "data_version": version,
+            "audio_files": audio_files,
+            "whisper_data": str(whisper_data_path)
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-

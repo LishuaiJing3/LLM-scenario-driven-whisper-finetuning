@@ -2,17 +2,18 @@ import torch
 from TTS.api import TTS
 import os
 import sqlite3
+import builtins
 
 from apps.data_curation.utils.language_mapping import is_supported_language
+from apps.data_curation.utils.license_handler import setup_tts_license
 
 
 class TTSClient:
-    def __init__(self, tts_model="tts_models/multilingual/multi-dataset/xtts_v2", db_path="data/assets/scenarios.db"):
-        """
-        Initialize the TTS client.
-        :param tts_model: The TTS model name to use.
-        :param db_path: Path to the SQLite database.
-        """
+    def __init__(self, tts_model="tts_models/multilingual/multi-dataset/xtts_v2", db_path="assets/scenarios.db"):
+        """Initialize the TTS client."""
+        # Set up license agreement
+        setup_tts_license()
+        
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TTS(model_name=tts_model, progress_bar=False).to(self.device)
         self.db_path = db_path
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     # tts_client.list_available_models()
 
     # Define hash IDs to generate audio for
-    hash_ids = ["228e1a089f4b063f","76c6d59d82159fa7"]
+    hash_ids = ["e87b625123affded","8e97a8ad37e98b9e"]
 
     # Generate audio for the given hash IDs
     audio_files = tts_client.generate_audio(hash_ids, speaker_wav="data/assets/test_audio.wav")

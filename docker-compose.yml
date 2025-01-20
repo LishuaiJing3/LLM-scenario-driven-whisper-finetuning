@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   data_curation:
-    image: data-curation-api
+    image: ${IMAGE_DATA_CURATION}
     build:
       context: .
       dockerfile: docker/Dockerfile.data_curation
@@ -10,20 +10,12 @@ services:
       - "8001:8001"
     volumes:
       - shared-data:/app/data/assets
-    environment:
-      - COQUI_TTS_AGREED=1
-      - LLM_MODEL=gemini-pro
-      - PROMPTS_DIR=/app/data/prompts
-      - DATASETS_DIR=/app/data/datasets
-      - ASSETS_DIR=/app/data/assets
-      - TRAINING_DATA_DIR=/app/data/training_data
-      - DB_PATH=/app/data/db.sqlite
     env_file:
       - .env
     restart: unless-stopped
 
   training:
-    image: training-api
+    image: ${IMAGE_TRAINING}
     build:
       context: .
       dockerfile: docker/Dockerfile.training
@@ -32,16 +24,12 @@ services:
     volumes:
       - shared-data:/app/data/datasets
       - shared-data:/app/data/whisper_finetuned
-    environment:
-      - TRAINING_DATA_PATH=/app/data/training_data/training_data.json
-      - MODEL_NAME=openai/whisper-small
-      - OUTPUT_DIR=/app/data/whisper_finetuned
     env_file:
       - .env
     restart: unless-stopped
 
   serving:
-    image: serving-api
+    image: ${IMAGE_SERVING}
     build:
       context: .
       dockerfile: docker/Dockerfile.serving
@@ -49,10 +37,6 @@ services:
       - "8003:8003"
     volumes:
       - shared-data:/app/data/whisper_finetuned
-    environment:
-      - MODEL_DIR=/app/data/whisper_finetuned
-      - SERVING_SERVICE_TITLE=Whisper Inference API
-      - API_VERSION=v1
     env_file:
       - .env
     restart: unless-stopped

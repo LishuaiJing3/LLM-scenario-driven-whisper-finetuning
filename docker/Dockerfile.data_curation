@@ -1,41 +1,64 @@
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust for building dependencies
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=/root/.cargo/bin:$PATH
+
+# Install Poetry in its own virtual environment
+ENV POETRY_VERSION=2.0.1
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_CACHE_DIR=/opt/.cache
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install poetry in a dedicated venv
+RUN python -m venv /opt/poetry && \
+    /opt/poetry/bin/pip install --upgrade pip && \
+    /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" && \
+    ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
+
+# Set up project virtual environment
+RUN python -m venv /app/.venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+RUN pip install --upgrade pip
+
+# Copy and install dependencies
+COPY pyproject.toml poetry.lock ./
+RUN poetry env use /app/.venv/bin/python && \
+    poetry install --no-interaction --no-ansi --no-root --only main
+
+# Final stage - minimal image
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy virtual environment and set environment variables
+COPY --from=builder /app/.venv /app/.venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
-# Install *latest* stable Rust via rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-# Add Rust binaries to PATH
-ENV PATH=/root/.cargo/bin:$PATH
-
-# (Optional) Confirm rustc version (must be >= 1.74)
-RUN rustc --version
-
-# Install Poetry
-ENV POETRY_HOME=/opt/poetry
-# Set Coqui TTS license acceptance
-ENV COQUI_TTS_AGREED=1
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry \
-    && poetry config virtualenvs.create false
-
-# Copy source code first
+# Copy application code
 COPY ./apps/data_curation ./apps/data_curation
 COPY ./shared ./shared
-COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root && \
-    poetry install --no-interaction --no-ansi
-
-# Create data directories
-RUN mkdir -p /app/data/assets
+# Install runtime dependencies
+RUN mkdir -p /app/data/assets \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8001
 
-CMD ["poetry", "run", "uvicorn", "apps.data_curation.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "apps.data_curation.main:app", "--host", "0.0.0.0", "--port", "8001"]
