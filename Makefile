@@ -1,4 +1,8 @@
-.PHONY: data_curation training serving docker-build docker-run docker-stop docker-clean compose-build compose-run compose-stop compose-clean k3d-setup k3d-deploy k3d-clean clean
+.PHONY: data_curation training serving docker-build docker-run docker-stop docker-clean compose-build compose-run compose-stop compose-clean deploy
+
+# Loading environment variables
+include .env
+export $(shell sed 's/=.*//' .env)
 
 # Local Environment
 # Run Data Curation API
@@ -42,6 +46,10 @@ k3d-clean:
 	kubectl delete -f k8s/data-curation.yaml
 	kubectl delete -f k8s/storage.yaml
 	k3d cluster delete whisper-finetuning-cluster
+
+# Deployment to Kubernetes
+deploy:
+	./scripts/deploy.sh
 
 # Shortcut Targets
 compose-build: docker-build

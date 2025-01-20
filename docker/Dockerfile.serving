@@ -1,36 +1,65 @@
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=/root/.cargo/bin:$PATH
+
+# 3. Install Poetry in /opt/poetry (Unchanged)
+ENV POETRY_VERSION=1.7.1
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_CACHE_DIR=/opt/.cache
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN python -m venv /opt/poetry && \
+    /opt/poetry/bin/pip install --upgrade pip && \
+    /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" && \
+    ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
+
+# 4. Copy dependency files 
+COPY pyproject.toml poetry.lock ./
+
+# Create your application venv in /app/.venv
+RUN python -m venv /app/.venv
+
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Upgrade pip inside our newly created venv
+RUN pip install --upgrade pip
+
+# Now install dependencies with Poetry (no manual sourcing required)
+RUN poetry install --no-interaction --no-ansi --no-root --no-dev
+
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the entire venv from builder
+COPY --from=builder /app/.venv /app/.venv
 
-# Install *latest* stable Rust via rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-# Add Rust binaries to PATH
-ENV PATH=/root/.cargo/bin:$PATH
+# Activate venv by default
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
-# (Optional) Confirm rustc version (must be >= 1.74)
-RUN rustc --version
-
-# Install Poetry
-ENV POETRY_HOME=/opt/poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry \
-    && poetry config virtualenvs.create false
-
-# Copy application code
+# Copy only necessary source code 
 COPY ./apps/serving ./apps/serving
 COPY ./shared ./shared
-# Copy dependency files
-COPY pyproject.toml poetry.lock ./
 
-# Configure poetry and install dependencies
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+# Install runtime dependencies in a single layer
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8003
-CMD ["poetry", "run", "uvicorn", "apps.serving.main:app", "--host", "0.0.0.0", "--port", "8003"]
+
+CMD ["uvicorn", "apps.serving.main:app", "--host", "0.0.0.0", "--port", "8003"]

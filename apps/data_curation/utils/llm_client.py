@@ -137,7 +137,7 @@ if __name__ == "__main__":
     }
 
     try:
-        result = llm_client.generate_conversations(user_inputs, prompts_path="apps/data_curation/prompts/v1/", output_dir="data/assets")
+        result = llm_client.generate_conversations(user_inputs, prompt_path="apps/data_curation/prompts/v1/", output_dir="data/assets")
         print("Generated Conversations:")
         print(json.dumps(result, indent=4))
     except ValueError as e:
