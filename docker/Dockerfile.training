@@ -2,55 +2,53 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-# 1) Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) Install Rust (if needed for certain deps)
+# Install Rust for building dependencies
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
 
-# 3) Install Poetry into /opt/poetry
-ENV POETRY_VERSION=1.7.1
+# Install Poetry in its own virtual environment
+ENV POETRY_VERSION=2.0.1
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_CACHE_DIR=/opt/.cache
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# Install poetry in a dedicated venv
 RUN python -m venv /opt/poetry && \
     /opt/poetry/bin/pip install --upgrade pip && \
     /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" && \
     ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
 
-# 4) Copy in your dependency files
-COPY pyproject.toml poetry.lock ./
-
-# 5) Create your application virtual environment in /app/.venv
+# Set up project virtual environment
 RUN python -m venv /app/.venv
-# Make this venv active for the next commands
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
-
-# 6) Install your project’s dependencies (no-dev, no-root, etc.)
 RUN pip install --upgrade pip
-RUN poetry install --no-interaction --no-ansi --no-root --no-dev
 
-# -----------------------------------------------------------------------------
-# Final stage: minimal runtime image
+# Copy and install dependencies
+COPY pyproject.toml poetry.lock ./
+RUN poetry env use /app/.venv/bin/python && \
+    poetry install --no-interaction --no-ansi --no-root --only main
+
+# Final stage - minimal image
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy the venv from the builder stage
+# Copy virtual environment and set environment variables
 COPY --from=builder /app/.venv /app/.venv
-# Activate it by default
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
-# Copy your application source
+# Copy application code
 COPY ./apps/training ./apps/training
 COPY ./shared ./shared
 
