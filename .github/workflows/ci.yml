@@ -50,8 +50,8 @@ jobs:
           file: iac/docker/Dockerfile.data_curation
           push: true
           tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/data-curation:${{ github.sha }}
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/data-curation:latest
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/data-curation:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/data-curation:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
@@ -63,8 +63,8 @@ jobs:
           file: iac/docker/Dockerfile.training
           push: true
           tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/training:${{ github.sha }}
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/training:latest
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/training:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/training:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
@@ -76,8 +76,8 @@ jobs:
           file: iac/docker/Dockerfile.serving
           push: true
           tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/serving:${{ github.sha }}
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/serving:latest
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/serving:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.event.repository.name }}/serving:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
