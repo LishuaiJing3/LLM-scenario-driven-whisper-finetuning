@@ -6,16 +6,18 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  CONTAINER_REGISTRY: ghcr.io          # Non-sensitive, defined here
+  REGISTRY_NAMESPACE: ${{ secrets.REGISTRY_NAMESPACE }}
+  IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
-      CONTAINER_REGISTRY: ghcr.io
-      REGISTRY_NAMESPACE: ${{ secrets.REGISTRY_NAMESPACE }}
-      IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
-      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}  # Sensitive, sourced from secrets
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}            # Sensitive, sourced from secrets
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
