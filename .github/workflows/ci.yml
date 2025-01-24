@@ -42,14 +42,16 @@ jobs:
           username: ${{ env.GHCR_USERNAME }}
           password: ${{ env.GHCR_PAT }}
 
-      # Build and push Docker images with specific Dockerfiles
+      # Build and push Docker images with repository name included
       - name: Build and Push Data Curation API
         uses: docker/build-push-action@v4
         with:
           context: .
           file: iac/docker/Dockerfile.data_curation
           push: true
-          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/data-curation:${{ github.sha }}
+          tags: |
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/data-curation:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/data-curation:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
@@ -60,7 +62,9 @@ jobs:
           context: .
           file: iac/docker/Dockerfile.training
           push: true
-          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/training:${{ github.sha }}
+          tags: |
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/training:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/training:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
@@ -71,7 +75,9 @@ jobs:
           context: .
           file: iac/docker/Dockerfile.serving
           push: true
-          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/serving:${{ github.sha }}
+          tags: |
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/serving:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ github.repository.split('/')[1] }}/serving:latest
 
       - name: Docker Prune (optional)
         run: docker system prune --all --force
